@@ -5,6 +5,7 @@ import Vue from 'vue';
 import 'prismjs';
 import 'prismjs/themes/prism.css';
 import 'vue-prism-editor/dist/VuePrismEditor.css';
+import Vue2TouchEvents from 'vue2-touch-events';
 
 import * as ElementUI from 'element-ui';
 // @ts-ignore
@@ -33,13 +34,16 @@ import {
 	faCogs,
 	faClone,
 	faCloud,
+	faCloudDownloadAlt,
 	faCopy,
+	faCut,
 	faDotCircle,
 	faEdit,
 	faEnvelope,
 	faEye,
 	faExclamationTriangle,
 	faExternalLinkAlt,
+	faExchangeAlt,
 	faFile,
 	faFileCode,
 	faFileDownload,
@@ -68,6 +72,8 @@ import {
 	faSave,
 	faSearchMinus,
 	faSearchPlus,
+	faServer,
+	faSignInAlt,
 	faSlidersH,
 	faSpinner,
 	faStop,
@@ -86,6 +92,9 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 import { store } from './store';
+
+Vue.use(Vue2TouchEvents);
+
 Vue.use(ElementUI, { locale });
 
 library.add(faAngleDoubleLeft);
@@ -104,13 +113,16 @@ library.add(faCog);
 library.add(faCogs);
 library.add(faClone);
 library.add(faCloud);
+library.add(faCloudDownloadAlt);
 library.add(faCopy);
+library.add(faCut);
 library.add(faDotCircle);
 library.add(faEdit);
 library.add(faEnvelope);
 library.add(faEye);
 library.add(faExclamationTriangle);
 library.add(faExternalLinkAlt);
+library.add(faExchangeAlt);
 library.add(faFile);
 library.add(faFileCode);
 library.add(faFileDownload);
@@ -139,6 +151,8 @@ library.add(faRss);
 library.add(faSave);
 library.add(faSearchMinus);
 library.add(faSearchPlus);
+library.add(faServer);
+library.add(faSignInAlt);
 library.add(faSlidersH);
 library.add(faSpinner);
 library.add(faStop);
@@ -173,7 +187,7 @@ if (process.env.NODE_ENV !== 'production') {
 			// not do anything about it anyway
 			return;
 		}
-		console.error('error cought in main.ts'); // eslint-disable-line no-console
+		console.error('error caught in main.ts'); // eslint-disable-line no-console
 		console.error(message); // eslint-disable-line no-console
 		console.error(error); // eslint-disable-line no-console
 	};

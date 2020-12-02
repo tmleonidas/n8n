@@ -22,6 +22,7 @@ import {
 	INodeTypesMaxCount,
 	INodeUi,
 	IWorkflowData,
+	IWorkflowDb,
 	IWorkflowDataUpdate,
 	XYPositon,
 } from '../../Interface';
@@ -29,6 +30,8 @@ import {
 import { restApi } from '@/components/mixins/restApi';
 import { nodeHelpers } from '@/components/mixins/nodeHelpers';
 import { showMessage } from '@/components/mixins/showMessage';
+
+import { isEqual } from 'lodash';
 
 import mixins from 'vue-typed-mixins';
 
@@ -192,14 +195,16 @@ export const workflowHelpers = mixins(
 				};
 
 				let workflowId = this.$store.getters.workflowId;
-				if (workflowId !== PLACEHOLDER_EMPTY_WORKFLOW_ID) {
+				if (workflowId === PLACEHOLDER_EMPTY_WORKFLOW_ID) {
 					workflowId = undefined;
 				}
 
+				const workflowName = this.$store.getters.workflowName;
+
 				if (copyData === true) {
-					return new Workflow(workflowId, JSON.parse(JSON.stringify(nodes)), JSON.parse(JSON.stringify(connections)), false, nodeTypes);
+					return new Workflow({ id: workflowId, name: workflowName, nodes: JSON.parse(JSON.stringify(nodes)), connections: JSON.parse(JSON.stringify(connections)), active: false, nodeTypes});
 				} else {
-					return new Workflow(workflowId, nodes, connections, false, nodeTypes);
+					return new Workflow({ id: workflowId, name: workflowName, nodes, connections, active: false, nodeTypes});
 				}
 			},
 
@@ -355,7 +360,7 @@ export const workflowHelpers = mixins(
 					connectionInputData = [];
 				}
 
-				return workflow.getParameterValue(expression, runExecutionData, runIndex, itemIndex, activeNode.name, connectionInputData, true);
+				return workflow.expression.getParameterValue(expression, runExecutionData, runIndex, itemIndex, activeNode.name, connectionInputData, true);
 			},
 
 			// Saves the currently loaded workflow to the database.
@@ -370,7 +375,7 @@ export const workflowHelpers = mixins(
 						{
 							confirmButtonText: 'Save',
 							cancelButtonText: 'Cancel',
-						}
+						},
 					)
 						.then((data) => {
 							// @ts-ignore
@@ -403,7 +408,7 @@ export const workflowHelpers = mixins(
 					if (currentWorkflow === undefined || withNewName === true) {
 						// Workflow is new or is supposed to get saved under a new name
 						// so create a new entry in database
-						workflowData.name = workflowName.trim() as string;
+						workflowData.name = workflowName!.trim() as string;
 
 						if (withNewName === true) {
 							// If an existing workflow gets resaved with a new name
@@ -415,7 +420,7 @@ export const workflowHelpers = mixins(
 
 						this.$store.commit('setActive', workflowData.active || false);
 						this.$store.commit('setWorkflowId', workflowData.id);
-						this.$store.commit('setWorkflowName', workflowData.name);
+						this.$store.commit('setWorkflowName', {newName: workflowData.name, setStateDirty: false});
 						this.$store.commit('setWorkflowSettings', workflowData.settings || {});
 					} else {
 						// Workflow exists already so update it
@@ -430,7 +435,7 @@ export const workflowHelpers = mixins(
 					}
 
 					this.$store.commit('removeActiveAction', 'workflowSaving');
-
+					this.$store.commit('setStateDirty', false);
 					this.$showMessage({
 						title: 'Workflow saved',
 						message: `The workflow "${workflowData.name}" got saved!`,
@@ -475,6 +480,30 @@ export const workflowHelpers = mixins(
 					node.position[0] += offsetPosition[0];
 					node.position[1] += offsetPosition[1];
 				}
+			},
+			async dataHasChanged(id: string) {
+				const currentData = await this.getWorkflowDataToSave();
+
+				let data: IWorkflowDb;
+				data = await this.restApi().getWorkflow(id);
+
+				if(data !== undefined) {
+					const x = {
+						nodes: data.nodes,
+						connections: data.connections,
+						settings: data.settings,
+						name: data.name,
+					};
+					const y = {
+						nodes: currentData.nodes,
+						connections: currentData.connections,
+						settings: currentData.settings,
+						name: currentData.name,
+					};
+					return !isEqual(x, y);
+				}
+
+				return true;
 			},
 		},
 	});

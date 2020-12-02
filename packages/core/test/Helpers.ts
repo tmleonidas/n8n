@@ -1,20 +1,39 @@
 import { set } from 'lodash';
 
 import {
+	ICredentialDataDecryptedObject,
+	ICredentialsHelper,
+	IExecuteWorkflowInfo,
 	INodeExecutionData,
 	INodeParameters,
 	INodeType,
-	INodeTypes,
 	INodeTypeData,
+	INodeTypes,
 	IRun,
 	ITaskData,
+	IWorkflowBase,
 	IWorkflowExecuteAdditionalData,
+	WorkflowHooks,
 } from 'n8n-workflow';
 
 import {
+	Credentials,
 	IDeferredPromise,
 	IExecuteFunctions,
 } from '../src';
+
+
+export class CredentialsHelper extends ICredentialsHelper {
+	getDecrypted(name: string, type: string): ICredentialDataDecryptedObject {
+		return {};
+	}
+
+	getCredentials(name: string, type: string): Credentials {
+		return new Credentials('', '', [], '');
+	}
+
+	async updateCredentials(name: string, type: string, data: ICredentialDataDecryptedObject): Promise<void> {}
+}
 
 
 class NodeTypesClass implements INodeTypes {
@@ -68,7 +87,7 @@ class NodeTypesClass implements INodeTypes {
 							displayOptions: {
 								show: {
 									mode: [
-										'passThrough'
+										'passThrough',
 									],
 								},
 							},
@@ -85,7 +104,7 @@ class NodeTypesClass implements INodeTypes {
 							default: 'input1',
 							description: 'Defines of which input the data should be used as output of node.',
 						},
-					]
+					],
 				},
 				async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 					// const itemsInput2 = this.getInputData(1);
@@ -112,7 +131,7 @@ class NodeTypesClass implements INodeTypes {
 					}
 
 					return [returnData];
-				}
+				},
 			},
 		},
 		'n8n-nodes-base.set': {
@@ -167,11 +186,11 @@ class NodeTypesClass implements INodeTypes {
 											default: 0,
 											description: 'The number value to write in the property.',
 										},
-									]
+									],
 								},
 							],
 						},
-					]
+					],
 				},
 				execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 					const items = this.getInputData();
@@ -194,7 +213,7 @@ class NodeTypesClass implements INodeTypes {
 					}
 
 					return this.prepareOutputData(returnData);
-				}
+				},
 			},
 		},
 		'n8n-nodes-base.start': {
@@ -212,7 +231,7 @@ class NodeTypesClass implements INodeTypes {
 					},
 					inputs: [],
 					outputs: ['main'],
-					properties: []
+					properties: [],
 				},
 				execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 					const items = this.getInputData();
@@ -248,20 +267,34 @@ export function NodeTypes(): NodeTypesClass {
 
 
 export function WorkflowExecuteAdditionalData(waitPromise: IDeferredPromise<IRun>, nodeExecutionOrder: string[]): IWorkflowExecuteAdditionalData {
+	const hookFunctions = {
+		nodeExecuteAfter: [
+			async (nodeName: string, data: ITaskData): Promise<void> => {
+				nodeExecutionOrder.push(nodeName);
+			},
+		],
+		workflowExecuteAfter: [
+			async (fullRunData: IRun): Promise<void> => {
+				waitPromise.resolve(fullRunData);
+			},
+		],
+	};
+
+	const workflowData: IWorkflowBase = {
+		name: '',
+		createdAt: new Date(),
+		updatedAt: new Date(),
+		active: true,
+		nodes: [],
+		connections: {},
+	};
+
 	return {
 		credentials: {},
-		hooks: {
-			nodeExecuteAfter: [
-				async (nodeName: string, data: ITaskData): Promise<void> => {
-					nodeExecutionOrder.push(nodeName);
-				},
-			],
-			workflowExecuteAfter: [
-				async (fullRunData: IRun): Promise<void> => {
-					waitPromise.resolve(fullRunData);
-				},
-			],
-		},
+		credentialsHelper: new CredentialsHelper({}, ''),
+		hooks: new WorkflowHooks(hookFunctions, 'trigger', '1', workflowData),
+		executeWorkflow: async (workflowInfo: IExecuteWorkflowInfo): Promise<any> => {}, // tslint:disable-line:no-any
+		restApiUrl: '',
 		encryptionKey: 'test',
 		timezone: 'America/New_York',
 		webhookBaseUrl: 'webhook',

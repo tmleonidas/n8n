@@ -1,10 +1,10 @@
 import { Builder, Parser } from 'xml2js';
 import { IExecuteFunctions } from 'n8n-core';
 import {
+	IDataObject,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	IDataObject,
 } from 'n8n-workflow';
 
 
@@ -91,6 +91,13 @@ export class Xml implements INodeType {
 						description: 'Prefix that is used to access the attributes.',
 					},
 					{
+						displayName: 'cdata',
+						name: 'cdata',
+						type: 'boolean',
+						default: false,
+						description: ' wrap text nodes in <![CDATA[ ... ]]> instead of escaping when necessary. Does not add <![CDATA[ ... ]]> if it is not required.',
+					},
+					{
 						displayName: 'Character Key',
 						name: 'charkey',
 						type: 'string',
@@ -103,6 +110,13 @@ export class Xml implements INodeType {
 						type: 'boolean',
 						default: false,
 						description: 'Omit the XML header.',
+					},
+					{
+						displayName: 'Root Name',
+						name: 'rootName',
+						type: 'string',
+						default: 'root',
+						description: 'Root element name to be used.',
 					},
 				],
 			},
@@ -206,7 +220,7 @@ export class Xml implements INodeType {
 					},
 				],
 			},
-		]
+		],
 	};
 
 
@@ -242,8 +256,8 @@ export class Xml implements INodeType {
 
 				items[itemIndex] = {
 					json: {
-						[dataPropertyName]: builder.buildObject(items[itemIndex].json)
-					}
+						[dataPropertyName]: builder.buildObject(items[itemIndex].json),
+					},
 				};
 			} else {
 				throw new Error(`The operation "${mode}" is not known!`);

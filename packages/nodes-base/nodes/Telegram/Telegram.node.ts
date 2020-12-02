@@ -5,13 +5,13 @@ import {
 import {
 	IDataObject,
 	INodeExecutionData,
-	INodeTypeDescription,
 	INodeType,
+	INodeTypeDescription,
 } from 'n8n-workflow';
 
 import {
-	apiRequest,
 	addAdditionalFields,
+	apiRequest,
 } from './GenericFunctions';
 
 
@@ -34,7 +34,7 @@ export class Telegram implements INodeType {
 			{
 				name: 'telegramApi',
 				required: true,
-			}
+			},
 		],
 		properties: [
 			{
@@ -53,7 +53,7 @@ export class Telegram implements INodeType {
 					{
 						name: 'Message',
 						value: 'message',
-					}
+					},
 				],
 				default: 'message',
 				description: 'The resource to operate on.',
@@ -147,6 +147,11 @@ export class Telegram implements INodeType {
 						description: 'Edit a text message',
 					},
 					{
+						name: 'Send Animation',
+						value: 'sendAnimation',
+						description: 'Send an animated file',
+					},
+					{
 						name: 'Send Audio',
 						value: 'sendAudio',
 						description: 'Send a audio file',
@@ -165,6 +170,11 @@ export class Telegram implements INodeType {
 						name: 'Send Message',
 						value: 'sendMessage',
 						description: 'Send a text message',
+					},
+					{
+						name: 'Send Media Group',
+						value: 'sendMediaGroup',
+						description: 'Send group of photos or videos to album',
 					},
 					{
 						name: 'Send Photo',
@@ -199,15 +209,17 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'getChat',
-							'leaveChat',
-							'getChatMember',
-							'setChatDescription',
-							'setChatTitle',
+							'get',
+							'leave',
+							'member',
+							'setDescription',
+							'setTitle',
+							'sendAnimation',
 							'sendAudio',
 							'sendChatAction',
 							'sendDocument',
 							'sendMessage',
+							'sendMediaGroup',
 							'sendPhoto',
 							'sendSticker',
 							'sendVideo',
@@ -238,7 +250,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'member'
+							'member',
 						],
 						resource: [
 							'chat',
@@ -261,7 +273,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'setDescription'
+							'setDescription',
 						],
 						resource: [
 							'chat',
@@ -284,7 +296,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'setTitle'
+							'setTitle',
 						],
 						resource: [
 							'chat',
@@ -311,7 +323,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'answerQuery'
+							'answerQuery',
 						],
 						resource: [
 							'callback',
@@ -330,7 +342,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'answerQuery'
+							'answerQuery',
 						],
 						resource: [
 							'callback',
@@ -422,7 +434,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						messageType: [
-							'message'
+							'message',
 						],
 						operation: [
 							'editMessageText',
@@ -433,7 +445,7 @@ export class Telegram implements INodeType {
 					},
 				},
 				required: true,
-				description: 'Unique identifier for the target chat or username of the target<br />channel (in the format @channelusername).',
+				description: 'Unique identifier for the target chat or username of the target<br />channel (in the format @channelusername). To find your chat id ask @get_id_bot.',
 			},
 			{
 				displayName: 'Message ID',
@@ -443,7 +455,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						messageType: [
-							'message'
+							'message',
 						],
 						operation: [
 							'editMessageText',
@@ -464,7 +476,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						messageType: [
-							'inlineMessage'
+							'inlineMessage',
 						],
 						operation: [
 							'editMessageText',
@@ -508,6 +520,29 @@ export class Telegram implements INodeType {
 
 
 			// ----------------------------------
+			//         message:sendAnimation
+			// ----------------------------------
+			{
+				displayName: 'Animation',
+				name: 'file',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						operation: [
+							'sendAnimation',
+						],
+						resource: [
+							'message',
+						],
+					},
+				},
+				description: 'Animation to send. Pass a file_id to send an animation that exists on the Telegram servers (recommended)<br />or pass an HTTP URL for Telegram to get an animation from the Internet.',
+			},
+
+
+
+			// ----------------------------------
 			//         message:sendAudio
 			// ----------------------------------
 			{
@@ -518,7 +553,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'sendAudio'
+							'sendAudio',
 						],
 						resource: [
 							'message',
@@ -540,7 +575,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'sendChatAction'
+							'sendChatAction',
 						],
 						resource: [
 							'message',
@@ -606,7 +641,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'sendDocument'
+							'sendDocument',
 						],
 						resource: [
 							'message',
@@ -614,6 +649,100 @@ export class Telegram implements INodeType {
 					},
 				},
 				description: 'Document to send. Pass a file_id to send a file that exists on the Telegram servers (recommended)<br />or pass an HTTP URL for Telegram to get a file from the Internet.',
+			},
+
+
+			// ----------------------------------
+			//         message:sendMediaGroup
+			// ----------------------------------
+			{
+				displayName: 'Media',
+				name: 'media',
+				type: 'fixedCollection',
+				displayOptions: {
+					show: {
+						operation: [
+							'sendMediaGroup',
+						],
+						resource: [
+							'message',
+						],
+					},
+				},
+				description: 'The media to add.',
+				placeholder: 'Add Media',
+				typeOptions: {
+					multipleValues: true,
+				},
+				default: {},
+				options: [
+					{
+						displayName: 'Media',
+						name: 'media',
+						values: [
+							{
+								displayName: 'Type',
+								name: 'type',
+								type: 'options',
+								options: [
+									{
+										name: 'Photo',
+										value: 'photo',
+									},
+									{
+										name: 'Video',
+										value: 'video',
+									},
+								],
+								default: 'photo',
+								description: 'The type of the media to add.',
+							},
+							{
+								displayName: 'Media File',
+								name: 'media',
+								type: 'string',
+								default: '',
+								description: 'Media to send. Pass a file_id to send a file that exists on the Telegram servers (recommended)<br />or pass an HTTP URL for Telegram to get a file from the Internet.',
+							},
+							{
+								displayName: 'Additional Fields',
+								name: 'additionalFields',
+								type: 'collection',
+								placeholder: 'Add Field',
+								default: {},
+								options: [
+									{
+										displayName: 'Caption',
+										name: 'caption',
+										type: 'string',
+										typeOptions: {
+											alwaysOpenEditWindow: true,
+										},
+										default: '',
+										description: 'Caption text to set, 0-1024 characters.',
+									},
+									{
+										displayName: 'Parse Mode',
+										name: 'parse_mode',
+										type: 'options',
+										options: [
+											{
+												name: 'Markdown',
+												value: 'Markdown',
+											},
+											{
+												name: 'HTML',
+												value: 'HTML',
+											},
+										],
+										default: 'HTML',
+										description: 'How to parse the text.',
+									},
+								],
+							},
+						],
+					},
+				],
 			},
 
 
@@ -655,7 +784,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'sendPhoto'
+							'sendPhoto',
 						],
 						resource: [
 							'message',
@@ -677,7 +806,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'sendSticker'
+							'sendSticker',
 						],
 						resource: [
 							'message',
@@ -699,7 +828,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
-							'sendVideo'
+							'sendVideo',
 						],
 						resource: [
 							'message',
@@ -711,7 +840,7 @@ export class Telegram implements INodeType {
 
 
 			// ----------------------------------
-			//         message:editMessageText/sendAudio/sendMessage/sendPhoto/sendSticker/sendVideo
+			//         message:editMessageText/sendAnimation/sendAudio/sendMessage/sendPhoto/sendSticker/sendVideo
 			// ----------------------------------
 
 			{
@@ -720,6 +849,7 @@ export class Telegram implements INodeType {
 				displayOptions: {
 					show: {
 						operation: [
+							'sendAnimation',
 							'sendDocument',
 							'sendMessage',
 							'sendPhoto',
@@ -1047,8 +1177,10 @@ export class Telegram implements INodeType {
 					show: {
 						operation: [
 							'editMessageText',
+							'sendAnimation',
 							'sendDocument',
 							'sendMessage',
+							'sendMediaGroup',
 							'sendPhoto',
 							'sendSticker',
 							'sendVideo',
@@ -1070,6 +1202,7 @@ export class Telegram implements INodeType {
 						displayOptions: {
 							show: {
 								'/operation': [
+									'sendAnimation',
 									'sendAudio',
 									'sendDocument',
 									'sendPhoto',
@@ -1119,6 +1252,7 @@ export class Telegram implements INodeType {
 						displayOptions: {
 							show: {
 								'/operation': [
+									'sendAnimation',
 									'sendAudio',
 									'sendVideo',
 								],
@@ -1137,6 +1271,7 @@ export class Telegram implements INodeType {
 						displayOptions: {
 							show: {
 								'/operation': [
+									'sendAnimation',
 									'sendVideo',
 								],
 							},
@@ -1162,6 +1297,7 @@ export class Telegram implements INodeType {
 							show: {
 								'/operation': [
 									'editMessageText',
+									'sendAnimation',
 									'sendAudio',
 									'sendMessage',
 									'sendPhoto',
@@ -1224,6 +1360,7 @@ export class Telegram implements INodeType {
 						displayOptions: {
 							show: {
 								'/operation': [
+									'sendAnimation',
 									'sendAudio',
 									'sendDocument',
 									'sendVideo',
@@ -1243,6 +1380,7 @@ export class Telegram implements INodeType {
 						displayOptions: {
 							show: {
 								'/operation': [
+									'sendAnimation',
 									'sendVideo',
 								],
 							},
@@ -1368,6 +1506,21 @@ export class Telegram implements INodeType {
 					// Add additional fields and replyMarkup
 					addAdditionalFields.call(this, body, i);
 
+
+				} else if (operation === 'sendAnimation') {
+					// ----------------------------------
+					//         message:sendAnimation
+					// ----------------------------------
+
+					endpoint = 'sendAnimation';
+
+					body.chat_id = this.getNodeParameter('chatId', i) as string;
+					body.animation = this.getNodeParameter('file', i) as string;
+
+					// Add additional fields and replyMarkup
+					addAdditionalFields.call(this, body, i);
+
+
 				} else if (operation === 'sendAudio') {
 					// ----------------------------------
 					//         message:sendAudio
@@ -1416,6 +1569,28 @@ export class Telegram implements INodeType {
 
 					// Add additional fields and replyMarkup
 					addAdditionalFields.call(this, body, i);
+
+				} else if (operation === 'sendMediaGroup') {
+					// ----------------------------------
+					//         message:sendMediaGroup
+					// ----------------------------------
+
+					endpoint = 'sendMediaGroup';
+
+					body.chat_id = this.getNodeParameter('chatId', i) as string;
+
+					const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
+					Object.assign(body, additionalFields);
+
+					const mediaItems = this.getNodeParameter('media', i) as IDataObject;
+					body.media = [];
+					for (const mediaItem of mediaItems.media as IDataObject[]) {
+						if (mediaItem.additionalFields !== undefined) {
+							Object.assign(mediaItem, mediaItem.additionalFields);
+							delete mediaItem.additionalFields;
+						}
+						(body.media as IDataObject[]).push(mediaItem);
+					}
 
 				} else if (operation === 'sendPhoto') {
 					// ----------------------------------

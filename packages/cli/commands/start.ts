@@ -2,16 +2,18 @@ import * as localtunnel from 'localtunnel';
 import {
 	TUNNEL_SUBDOMAIN_ENV,
 	UserSettings,
-} from "n8n-core";
+} from 'n8n-core';
 import { Command, flags } from '@oclif/command';
 const open = require('open');
-import { promisify } from "util";
 
 import * as config from '../config';
 import {
+	ActiveExecutions,
 	ActiveWorkflowRunner,
+	CredentialsOverwrites,
 	CredentialTypes,
 	Db,
+	ExternalHooks,
 	GenericHelpers,
 	LoadNodesAndCredentials,
 	NodeTypes,
@@ -19,7 +21,6 @@ import {
 	TestWebhooks,
 } from "../src";
 
-const tunnel = promisify(localtunnel);
 
 let activeWorkflowRunner: ActiveWorkflowRunner.ActiveWorkflowRunner | undefined;
 let processExistCode = 0;
@@ -68,22 +69,45 @@ export class Start extends Command {
 	static async stopProcess() {
 		console.log(`\nStopping n8n...`);
 
-		setTimeout(() => {
-			// In case that something goes wrong with shutdown we
-			// kill after max. 30 seconds no matter what
-			process.exit(processExistCode);
-		}, 30000);
+		try {
+			const externalHooks = ExternalHooks();
+			await externalHooks.run('n8n.stop', []);
 
-		const removePromises = [];
-		if (activeWorkflowRunner !== undefined) {
-			removePromises.push(activeWorkflowRunner.removeAll());
+			setTimeout(() => {
+				// In case that something goes wrong with shutdown we
+				// kill after max. 30 seconds no matter what
+				process.exit(processExistCode);
+			}, 30000);
+
+			const removePromises = [];
+			if (activeWorkflowRunner !== undefined) {
+				removePromises.push(activeWorkflowRunner.removeAll());
+			}
+
+			// Remove all test webhooks
+			const testWebhooks = TestWebhooks.getInstance();
+			removePromises.push(testWebhooks.removeAll());
+
+			await Promise.all(removePromises);
+
+			// Wait for active workflow executions to finish
+			const activeExecutionsInstance = ActiveExecutions.getInstance();
+			let executingWorkflows = activeExecutionsInstance.getActiveExecutions();
+
+			let count = 0;
+			while (executingWorkflows.length !== 0) {
+				if (count++ % 4 === 0) {
+					console.log(`Waiting for ${executingWorkflows.length} active executions to finish...`);
+				}
+				await new Promise((resolve) => {
+					setTimeout(resolve, 500);
+				});
+				executingWorkflows = activeExecutionsInstance.getActiveExecutions();
+			}
+
+		} catch (error) {
+			console.error('There was an error shutting down n8n.', error);
 		}
-
-		// Remove all test webhooks
-		const testWebhooks = TestWebhooks.getInstance();
-		removePromises.push(testWebhooks.removeAll());
-
-		await Promise.all(removePromises);
 
 		process.exit(processExistCode);
 	}
@@ -108,6 +132,14 @@ export class Start extends Command {
 				// Load all node and credential types
 				const loadNodesAndCredentials = LoadNodesAndCredentials();
 				await loadNodesAndCredentials.init();
+
+				// Load the credentials overwrites if any exist
+				const credentialsOverwrites = CredentialsOverwrites();
+				await credentialsOverwrites.init();
+
+				// Load all external hooks
+				const externalHooks = ExternalHooks();
+				await externalHooks.init();
 
 				// Add the found types to an instance other parts of the application can use
 				const nodeTypes = NodeTypes();
@@ -146,7 +178,7 @@ export class Start extends Command {
 					const port = config.get('port') as number;
 
 					// @ts-ignore
-					const webhookTunnel = await tunnel(port, tunnelSettings);
+					const webhookTunnel = await localtunnel(port, tunnelSettings);
 
 					process.env.WEBHOOK_TUNNEL_URL = webhookTunnel.url + '/';
 					this.log(`Tunnel URL: ${process.env.WEBHOOK_TUNNEL_URL}\n`);
@@ -173,7 +205,7 @@ export class Start extends Command {
 						Start.openBrowser();
 					}
 					this.log(`\nPress "o" to open in Browser.`);
-					process.stdin.on("data", (key) => {
+					process.stdin.on("data", (key : string) => {
 						if (key === 'o') {
 							Start.openBrowser();
 							inputText = '';
